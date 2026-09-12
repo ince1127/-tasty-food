@@ -323,7 +323,12 @@
     return apiGet({ action:'get_config' }).then(function(res){
       configLoading = false;
       if(res && res.ok){
-        config = res.config || JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+        var cfg = res.config;
+        if(typeof cfg === 'string'){
+          // 相容舊資料：若後台存的是「被雙重編碼」的字串，這裡自動修正解析一次
+          try{ cfg = JSON.parse(cfg); }catch(e){ cfg = null; }
+        }
+        config = cfg || JSON.parse(JSON.stringify(DEFAULT_CONFIG));
       } else {
         config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
         configLoadError = (res && res.error) || '讀取設定失敗，暫時使用預設值。';
@@ -341,7 +346,7 @@
     config = nextConfig;
     configSaving = true;
     render();
-    apiPost({ action:'set_config', config: JSON.stringify(nextConfig) }).then(function(res){
+    apiPost({ action:'set_config', config: nextConfig }).then(function(res){
       configSaving = false;
       if(res && res.ok){ if(successMsg) showToast(successMsg); }
       else { showToast('儲存設定時發生問題：' + ((res&&res.error)||'未知錯誤')); }
@@ -506,6 +511,23 @@
       closedNote:'', orderNote:'',
       menu:[{name:'', price:''}]
     };
+  }
+
+  // ---------- 批次貼上文字匯入菜單（品項,價格 一行一項）----------
+  function parseMenuLines(text){
+    var lines = String(text||'').split(/\r?\n/);
+    var items = [];
+    var skipped = 0;
+    lines.forEach(function(line){
+      line = line.trim();
+      if(!line) return;
+      var parts = line.split(/,|，|\t/);
+      var name = (parts[0]||'').trim();
+      var price = Number((parts[1]||'').trim());
+      if(!name || !price || isNaN(price) || price<=0){ skipped++; return; }
+      items.push({ name:name, price:price });
+    });
+    return { items: items, skipped: skipped };
   }
 
   function contactTypeOptions(sel){
@@ -868,6 +890,9 @@
       '<div class="muted" style="margin-bottom:6px;">菜單品項</div>' +
       '<div class="row-list">'+menuHtml+'</div>' +
       '<button type="button" class="btn btn-ghost btn-small" data-action="ns-add-menu">＋ 新增品項</button>' +
+      '<div class="muted" style="margin:12px 0 6px;">或直接貼上整份菜單（一行一項，格式：品項,價格）</div>' +
+      '<textarea id="ns-menu-batch" rows="4" style="width:100%;" placeholder="原味蛋餅,35\n蔬菜蛋餅,45"></textarea>' +
+      '<div style="margin-top:6px;"><button type="button" class="btn btn-ghost btn-small" data-action="ns-menu-batch-import">批次匯入到上方清單</button></div>' +
       '<div class="divider"></div>' +
       '<div style="display:flex; gap:10px; justify-content:flex-end;">' +
         '<button type="button" class="btn btn-ghost" data-action="ns-cancel">取消</button>' +
@@ -906,6 +931,9 @@
           '<input id="new-item-price-'+store.id+'" placeholder="價格" type="number" min="0" style="max-width:110px;" />' +
           '<button type="button" class="btn btn-primary btn-small" data-action="add-menu-item" data-store="'+store.id+'">新增品項</button>' +
         '</div>' +
+        '<div class="muted" style="margin:12px 0 6px;">批次新增品項（一行一項，格式：品項,價格）</div>' +
+        '<textarea id="batch-menu-'+store.id+'" rows="3" style="width:100%;" placeholder="培根蛋餅,50\n起司蛋餅,45"></textarea>' +
+        '<div style="margin-top:6px;"><button type="button" class="btn btn-ghost btn-small" data-action="batch-add-menu" data-store="'+store.id+'">批次新增到此店</button></div>' +
         '<div class="divider"></div>' +
         delStoreHtml +
       '</div>' +
@@ -1068,6 +1096,17 @@
       if(action==='export-excel'){ exportOrdersToExcel(); return; }
 
       if(action==='add-menu-item'){ addMenuItem(store); return; }
+      if(action==='batch-add-menu'){
+        var btEl = document.getElementById('batch-menu-'+store);
+        var batchRes = parseMenuLines(btEl ? btEl.value : '');
+        if(batchRes.items.length===0){ showToast('沒有解析到有效的品項，請確認格式為「品項,價格」，一行一項。'); return; }
+        var nextStoresBatch = config.stores.map(function(s){
+          if(s.id!==store) return s;
+          return Object.assign({}, s, { menu: s.menu.concat(batchRes.items) });
+        });
+        saveConfig(Object.assign({}, config, { stores: nextStoresBatch }), '已批次新增 '+batchRes.items.length+' 項' + (batchRes.skipped>0 ? '，略過 '+batchRes.skipped+' 行格式錯誤' : '') + '。');
+        return;
+      }
       if(action==='remove-menu-item'){ removeMenuItemAt(store, Number(idx)); return; }
       if(action==='edit-menu-item'){ editingItem = { storeId:store, index:Number(idx) }; render(); return; }
       if(action==='cancel-menu-item-edit'){ editingItem = null; render(); return; }
@@ -1087,6 +1126,16 @@
       if(action==='ns-remove-hours'){ newStoreForm.hours.splice(Number(idx),1); render(); return; }
       if(action==='ns-add-menu'){ newStoreForm.menu.push({name:'',price:''}); render(); return; }
       if(action==='ns-remove-menu'){ newStoreForm.menu.splice(Number(idx),1); render(); return; }
+      if(action==='ns-menu-batch-import'){
+        var nsTaEl = document.getElementById('ns-menu-batch');
+        var nsRes = parseMenuLines(nsTaEl ? nsTaEl.value : '');
+        if(nsRes.items.length===0){ showToast('沒有解析到有效的品項，請確認格式為「品項,價格」，一行一項。'); return; }
+        var existingRows = newStoreForm.menu.filter(function(m){ return m.name && String(m.name).trim(); });
+        newStoreForm.menu = existingRows.concat(nsRes.items);
+        showToast('已匯入 '+nsRes.items.length+' 項' + (nsRes.skipped>0 ? '，略過 '+nsRes.skipped+' 行格式錯誤' : '') + '，請檢查下方清單。');
+        render();
+        return;
+      }
     };
 
     app.oninput = function(e){
