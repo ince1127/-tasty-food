@@ -1,0 +1,1271 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>油廠好食光</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap');
+
+  :root{
+    --bg:#F6F3EC; --surface:#FFFFFF; --surface-2:#EFEADD;
+    --ink:#262119; --ink-soft:#5B5346; --muted:#8A8172; --border:#E3DBC9;
+    --accent:#0F6B5C; --accent-ink:#FFFFFF; --accent-soft:#E1F0EB;
+    --amber:#A6650F; --amber-soft:#F8EAD2;
+    --danger:#AD3327; --danger-soft:#FBE7E4;
+    --success:#2E7D4F; --success-soft:#E4F3E9;
+    --shadow:0 1px 2px rgba(38,33,25,.06), 0 10px 28px -14px rgba(38,33,25,.22);
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{background:var(--bg); color:var(--ink); font-family:'Noto Sans TC',system-ui,sans-serif; line-height:1.55; margin:0;}
+  #app{max-width:1040px; margin:0 auto; padding:28px 20px 80px;}
+  h1,h2,h3{font-family:'Noto Serif TC',serif; margin:0;}
+  table{border-collapse:collapse; width:100%;}
+  .num{font-variant-numeric:tabular-nums;}
+  a{color:var(--accent);}
+  button{font:inherit; cursor:pointer;}
+  input,textarea,select{font:inherit; color:var(--ink); background:var(--surface); border:1px solid var(--border); border-radius:9px; padding:8px 10px;}
+  input:focus-visible,textarea:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  .header{margin-bottom:22px;}
+  .eyebrow{font-size:12.5px; letter-spacing:.08em; color:var(--muted); font-weight:700; text-transform:uppercase; margin-bottom:6px;}
+  .title{font-size:clamp(24px,3.4vw,32px); font-weight:700;}
+  .subtitle{color:var(--ink-soft); margin-top:6px; font-size:14.5px; max-width:640px;}
+
+  .summary-bar{display:flex; flex-wrap:wrap; gap:10px; margin-top:18px;}
+  .summary-stat{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:12px 16px; box-shadow:var(--shadow); min-width:132px;}
+  .summary-stat .num-big{font-size:22px; font-weight:700; font-variant-numeric:tabular-nums;}
+  .summary-stat .lbl{font-size:12.5px; color:var(--muted);}
+
+  .readonly-banner{background:var(--amber-soft); border:1px solid var(--amber); color:var(--ink); border-radius:10px; padding:10px 14px; font-size:13.5px; margin-top:16px;}
+  .deadline-banner{border-radius:10px; padding:10px 14px; font-size:13.5px; margin-top:16px; font-weight:700;}
+  .deadline-banner.open{background:var(--accent-soft); border:1px solid var(--accent); color:var(--ink);}
+  .deadline-banner.closed{background:var(--danger-soft); border:1px solid var(--danger); color:var(--ink);}
+
+  .section{margin-top:36px;}
+  .section-head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px;}
+  .section-title{font-size:19px; font-weight:700;}
+  .section-hint{color:var(--muted); font-size:13px;}
+
+  .today-pick-banner{background:var(--accent-soft); border:1px solid var(--accent); color:var(--ink); border-radius:10px; padding:10px 14px; font-size:13.5px; margin-bottom:14px; font-weight:700;}
+  .store-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:18px;}
+  .store-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:20px; display:flex; flex-direction:column; gap:14px; position:relative;}
+  .store-card[data-color="amber"]{border-top:4px solid var(--amber);}
+  .store-card[data-color="teal"]{border-top:4px solid var(--accent);}
+  .store-card.today-pick{box-shadow:0 0 0 3px var(--accent-soft), var(--shadow);}
+  .today-pick-badge{position:absolute; top:-12px; left:16px; background:var(--accent); color:#fff; font-size:12px; font-weight:700; padding:4px 12px; border-radius:999px; box-shadow:var(--shadow);}
+  .pill{display:inline-block; font-size:12px; font-weight:700; padding:3px 10px; border-radius:999px;}
+  .pill.amber{background:var(--amber-soft); color:var(--amber);}
+  .pill.teal{background:var(--accent-soft); color:var(--accent);}
+  .store-name{font-size:19px; font-weight:700; margin-top:6px;}
+  .meta-list{display:flex; flex-direction:column; gap:6px; font-size:13.5px; color:var(--ink-soft);}
+  .meta-row{display:flex; gap:7px; align-items:flex-start;}
+  .meta-row .ico{flex:none; width:18px; text-align:center;}
+  .chip-row{display:flex; flex-wrap:wrap; gap:6px; margin-top:2px;}
+  .chip{display:inline-flex; align-items:center; gap:5px; background:var(--surface-2); border-radius:8px; padding:4px 9px; font-size:12.5px; color:var(--ink-soft); text-decoration:none;}
+  .chip:hover{background:var(--border);}
+  .note-box{border-radius:10px; padding:10px 12px; font-size:12.8px; line-height:1.6;}
+  .note-box.amber{background:var(--amber-soft); color:var(--ink);}
+  .note-box.teal{background:var(--accent-soft); color:var(--ink);}
+
+  .menu-table th{text-align:left; font-size:12px; color:var(--muted); font-weight:700; padding:0 6px 6px; border-bottom:1px solid var(--border);}
+  .menu-table td{padding:8px 6px; border-bottom:1px solid var(--border); font-size:14px; vertical-align:middle;}
+  .menu-table tr:last-child td{border-bottom:none;}
+  .menu-table .price-col{text-align:right; white-space:nowrap;}
+  .menu-table .qty-col{text-align:center; white-space:nowrap;}
+  .menu-table .sub-col{text-align:right; white-space:nowrap; color:var(--ink-soft);}
+  .stepper{display:inline-flex; align-items:center; gap:6px;}
+  .stepper button{width:26px; height:26px; border-radius:7px; border:1px solid var(--border); background:var(--surface-2); color:var(--ink); font-weight:700; line-height:1;}
+  .stepper button:hover{background:var(--border);}
+  .stepper .qty-val{min-width:22px; text-align:center; font-variant-numeric:tabular-nums;}
+  .store-subtotal{text-align:right; font-size:13.5px; color:var(--ink-soft); padding-top:2px;}
+  .store-subtotal b{color:var(--ink); font-variant-numeric:tabular-nums;}
+
+  .cart-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:22px;}
+  .cart-empty{color:var(--muted); font-size:14px; padding:12px 0;}
+  .cart-group{margin-bottom:14px;}
+  .cart-group-title{font-size:13px; font-weight:700; color:var(--ink-soft); margin-bottom:6px;}
+  .cart-item{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 0; font-size:14px; border-bottom:1px dashed var(--border);}
+  .cart-item .name{flex:1;}
+  .cart-item .amt{font-variant-numeric:tabular-nums; color:var(--ink-soft); white-space:nowrap;}
+  .cart-total-row{display:flex; justify-content:space-between; align-items:baseline; margin-top:14px; padding-top:12px; border-top:1px solid var(--border);}
+  .cart-total-row .grand{font-size:22px; font-weight:700; font-variant-numeric:tabular-nums;}
+  .cart-form{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px;}
+  .cart-form .full{grid-column:1/-1;}
+  .field label{display:block; font-size:12.5px; font-weight:700; color:var(--ink-soft); margin-bottom:5px;}
+  .field input,.field textarea{width:100%;}
+
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:6px; border-radius:10px; padding:10px 18px; font-weight:700; font-size:14px; border:1px solid transparent;}
+  .btn-primary{background:var(--accent); color:var(--accent-ink);}
+  .btn-primary:hover{filter:brightness(1.06);}
+  .btn-primary:disabled{opacity:.45; cursor:not-allowed;}
+  .btn-ghost{background:transparent; border-color:var(--border); color:var(--ink);}
+  .btn-ghost:hover{background:var(--surface-2);}
+  .btn-danger{background:var(--danger-soft); color:var(--danger); border-color:transparent;}
+  .btn-danger:hover{filter:brightness(0.97);}
+  .btn-small{padding:6px 11px; font-size:12.5px; border-radius:8px;}
+
+  .totals-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px;}
+  .totals-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow);}
+  .totals-card h3{font-size:15.5px; margin-bottom:10px;}
+  .totals-table td{padding:5px 0; font-size:13.8px; border-bottom:1px dashed var(--border);}
+  .totals-table td:last-child{text-align:right; font-variant-numeric:tabular-nums;}
+  .totals-store-total{display:flex; justify-content:space-between; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); font-weight:700;}
+  .grand-total-card{background:var(--accent-soft); border:1px solid var(--accent); border-radius:var(--radius); padding:18px 20px; display:flex; justify-content:space-between; align-items:center; margin-top:16px;}
+  .grand-total-card .lbl{font-weight:700;}
+  .grand-total-card .val{font-size:24px; font-weight:700; color:var(--accent); font-variant-numeric:tabular-nums;}
+
+  .orders-wrap{overflow-x:auto; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow);}
+  .orders-table{min-width:640px;}
+  .orders-table th{text-align:left; font-size:12px; color:var(--muted); font-weight:700; padding:10px 12px; border-bottom:1px solid var(--border); white-space:nowrap;}
+  .orders-table td{padding:10px 12px; border-bottom:1px solid var(--border); font-size:13.5px; vertical-align:top;}
+  .orders-table tr:last-child td{border-bottom:none;}
+  .orders-empty{padding:24px; text-align:center; color:var(--muted); font-size:14px;}
+
+  .admin-bar{display:flex; justify-content:flex-end; margin-top:40px;}
+  .admin-link{font-size:12.5px; color:var(--muted); background:none; border:none; text-decoration:underline; padding:4px;}
+  .admin-panel{background:var(--surface-2); border:1px dashed var(--border); border-radius:var(--radius); padding:20px; margin-top:12px;}
+  .admin-panel h3{font-size:15px; margin-bottom:10px;}
+  .admin-login{display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;}
+  .row-list{display:flex; flex-direction:column; gap:8px; margin:8px 0;}
+  .row-list-item{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+  .row-list-item input,.row-list-item select{flex:1; min-width:90px;}
+  .form-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;}
+  .form-grid .full{grid-column:1/-1;}
+  .admin-store-block{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px; margin-top:12px;}
+  .admin-store-block summary{cursor:pointer; font-weight:700; font-size:14px;}
+  .confirm-inline{display:inline-flex; gap:6px; align-items:center; background:var(--danger-soft); padding:4px 8px; border-radius:8px;}
+  .divider{height:1px; background:var(--border); margin:16px 0;}
+  .muted{color:var(--muted); font-size:12.8px;}
+  .item-edit-row{display:flex; gap:8px; align-items:center; flex-wrap:wrap; background:var(--surface-2); padding:6px 8px; border-radius:8px;}
+
+  .toast{position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(12px); background:var(--ink); color:var(--bg); padding:11px 18px; border-radius:10px; font-size:13.5px; box-shadow:var(--shadow); opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; z-index:50; max-width:90vw; text-align:center;}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  footer.foot{margin-top:48px; padding-top:18px; border-top:1px solid var(--border); font-size:12px; color:var(--muted); text-align:center;}
+
+  @media (max-width:560px){
+    .cart-form{grid-template-columns:1fr;}
+    .form-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  // 請務必改成您自己部署的 Apps Script 網址（結尾為 /exec）
+  var APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxYXxslok81RWq7meW-Em7pQMpHncANKRYoI8Ao3rjFhNNzjY8IRwqzNbWOmA6WvJhp/exec";
+
+  var DEFAULT_CONFIG = {
+    passcode: "3632300",
+    deadline: null,
+    todayPick: null,
+    stores: [
+      {
+        "id": "s1",
+        "name": "蛋餅里家 楠梓後昌店",
+        "tag": "早餐蛋餅",
+        "color": "amber",
+        "address": "高雄市楠梓區後昌路797巷135號",
+        "addressNote": "楠梓區後昌自強市場旁，寶島眼鏡對面往永興市場方向",
+        "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E8%9B%8B%E9%A4%85%E9%87%8C%E5%AE%B6%20%E9%AB%98%E9%9B%84%E5%B8%82%E6%A5%A0%E6%A2%93%E5%8D%80%E5%BE%8C%E6%98%8C%E8%B7%AF797%E5%B7%B7135%E8%99%9F",
+        "contacts": [
+          {"type":"phone","label":"佳佳","value":"0916-817968"},
+          {"type":"phone","label":"詩庭","value":"0956-588822"},
+          {"type":"line","label":"LINE","value":"@rzt0698c"},
+          {"type":"fb","label":"FB","value":"蛋餅里家楠梓後昌店"}
+        ],
+        "hours": [
+          {"days":"週一至週五","time":"06:00–10:30"},
+          {"days":"週六、週日","time":"07:00–10:00"}
+        ],
+        "closedNote": "公休：星期三",
+        "orderNote": "歡迎公司行號、團體來電或加 LINE 預訂；建議團購前一天先聯繫店家確認可接單、取餐時間。",
+        "menu": [
+          {"name":"原味蛋餅","price":35},{"name":"蔬菜蛋餅","price":45},{"name":"起司蛋餅","price":45},
+          {"name":"火腿蛋餅","price":45},{"name":"玉米蛋餅","price":45},{"name":"鮪魚蛋餅","price":50},
+          {"name":"熱狗蛋餅","price":45},{"name":"薯餅蛋餅","price":50},{"name":"培根蛋餅","price":50},
+          {"name":"肉鬆蛋餅","price":55},{"name":"菜脯蛋餅","price":45},{"name":"豬排蛋餅","price":55},
+          {"name":"塔香蛋餅","price":45},{"name":"嫩雞蛋餅","price":55},{"name":"香鬆蛋餅","price":45},
+          {"name":"泡菜蛋餅","price":55}
+        ],
+        "menuNote": ""
+      },
+      {
+        "id": "s2",
+        "name": "順秋妙店｜腸粉．蒸蒸菜",
+        "tag": "港式腸粉",
+        "color": "teal",
+        "address": "高雄市楠梓區後昌路1099號",
+        "addressNote": "",
+        "mapUrl": "https://www.google.com/maps/place/%E9%A0%86%E7%A7%8B%E5%A6%99%E5%BA%97%E8%85%B8%E7%B2%89%E8%92%B8%E8%92%B8%E8%8F%9C/@22.7173132,120.2920817,3330a,13.1y/data=!3m7!1e2!3m5!1sCIABIhBCHZJXVlQloBD61uSARX91!2e10!3e12!7i1522!8i1076!4m7!3m6!1s0x346e0f72811ece81:0x983a7d7b23a6e481!8m2!3d22.7173132!4d120.2920817!10e5!16s%2Fg%2F11xh24mrcg",
+        "contacts": [
+          {"type":"ig","label":"Instagram","value":"@shunchiumiaotien","url":"https://www.instagram.com/shunchiumiaotien/"},
+          {"type":"fb","label":"Facebook","value":"順秋妙店腸粉．蒸蒸菜","url":"https://www.facebook.com/pages/%E9%A0%86%E7%A7%8B%E5%A6%99%E5%BA%97%E8%85%B8%E7%B2%89%E8%92%B8%E8%92%B8%E8%8F%9C/646968398508852"}
+        ],
+        "hours": [{"days":"週一至週六","time":"11:30–19:00"}],
+        "closedNote": "查無公開的週日營業資訊，建議先確認",
+        "orderNote": "目前查無公開訂購電話，建議直接到店或透過 Instagram／Facebook 私訊詢問能否接團購預訂。下列為外送平台（foodpanda／Uber Eats）標示的參考價，曾有顧客反映內用價格較低（例如豬肉腸粉內用約 60 元、外送標價 100 元），正式團購前請務必再次向店家確認實際金額。",
+        "menu": [
+          {"name":"雞蛋腸粉","price":70},{"name":"雙蛋腸粉","price":85},{"name":"蔬菜腸粉蛋","price":85},
+          {"name":"豬肉蛋腸粉","price":100},{"name":"牛肉蛋腸粉","price":120},{"name":"蝦仁蛋腸粉","price":135},
+          {"name":"綜合蛋腸粉（豬肉、牛肉、蝦仁）","price":170},{"name":"爆蛋小卷蛋腸粉","price":199},
+          {"name":"超蝦巨無霸蛋腸粉","price":220}
+        ],
+        "menuNote": "以上為外送平台參考價，非店家公告之內用／自取價，請務必確認後再統一收費。"
+      }
+    ]
+  };
+
+  var config = null;          // 從後台載入的設定（店家/菜單/密碼/結單時間），null = 尚未載入完成
+  var configLoading = true;
+  var configLoadError = '';
+  var liveOrders = [];
+  var ordersLoading = false;
+  var ordersLoadError = '';
+  var submitBusy = false;
+  var configSaving = false;
+
+  var draft = {};        // { storeId: { itemName: qty } }  -- local only
+  var isAdmin = false;   // false | 'pending' | true
+  var adminScreen = false;
+  var newStoreForm = null;
+  var editingItem = null;
+  var confirmTarget = null;
+
+  function fmt(n){ return '$' + new Intl.NumberFormat('zh-Hant-TW').format(n||0); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function uid(p){ return p + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+  function isOrderingClosed(){
+    if(!config || !config.deadline) return false;
+    return Date.now() >= new Date(config.deadline).getTime();
+  }
+  function formatDeadline(d){
+    var weekdays = ['日','一','二','三','四','五','六'];
+    var mm = d.getMonth()+1, dd = d.getDate();
+    var hh = String(d.getHours()).padStart(2,'0'), mi = String(d.getMinutes()).padStart(2,'0');
+    return mm+'/'+dd+'（週'+weekdays[d.getDay()]+'）'+hh+':'+mi;
+  }
+  function toLocalInputValue(iso){
+    var d = new Date(iso);
+    var pad = function(n){ return String(n).padStart(2,'0'); };
+    return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
+  }
+
+  function showToast(msg){
+    var t = document.getElementById('toast');
+    if(!t) return;
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(showToast._h);
+    showToast._h = setTimeout(function(){ t.classList.remove('show'); }, 3400);
+  }
+
+  function findStore(id){ return config && config.stores.find(function(s){ return s.id===id; }); }
+
+  function draftQty(storeId, itemName){
+    return (draft[storeId] && draft[storeId][itemName]) || 0;
+  }
+  function setDraftQty(storeId, itemName, qty){
+    if(!draft[storeId]) draft[storeId] = {};
+    qty = Math.max(0, qty);
+    if(qty===0){ delete draft[storeId][itemName]; }
+    else { draft[storeId][itemName] = qty; }
+    render();
+  }
+
+  function cartLines(){
+    var lines = [];
+    Object.keys(draft).forEach(function(storeId){
+      var store = findStore(storeId);
+      if(!store) return;
+      Object.keys(draft[storeId]).forEach(function(itemName){
+        var qty = draft[storeId][itemName];
+        if(qty<=0) return;
+        var item = store.menu.find(function(m){ return m.name===itemName; });
+        if(!item) return;
+        lines.push({ storeId: storeId, storeName: store.name, name: itemName, price: item.price, qty: qty, amount: item.price*qty });
+      });
+    });
+    return lines;
+  }
+  function cartTotal(){ return cartLines().reduce(function(a,l){ return a+l.amount; }, 0); }
+
+  // ---------- 後台呼叫（一般 fetch，不受 Claude Artifact 的限制）----------
+  function apiGet(params){
+    var qs = Object.keys(params||{}).map(function(k){ return encodeURIComponent(k)+'='+encodeURIComponent(params[k]); }).join('&');
+    var url = APPS_SCRIPT_URL + (qs ? '?' + qs : '');
+    return fetch(url, { method:'GET' }).then(function(res){
+      if(!res.ok) throw { code:'http_error', status: res.status };
+      return res.json();
+    });
+  }
+  function apiPost(payload){
+    return fetch(APPS_SCRIPT_URL, {
+      method:'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // 避免觸發 CORS 預檢請求
+      body: JSON.stringify(payload)
+    }).then(function(res){
+      if(!res.ok) throw { code:'http_error', status: res.status };
+      return res.json();
+    });
+  }
+
+  function loadConfig(){
+    configLoading = true; configLoadError = ''; render();
+    return apiGet({ action:'get_config' }).then(function(res){
+      configLoading = false;
+      if(res && res.ok){
+        config = res.config || JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+      } else {
+        config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+        configLoadError = (res && res.error) || '讀取設定失敗，暫時使用預設值。';
+      }
+      render();
+    }).catch(function(){
+      configLoading = false;
+      config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+      configLoadError = '無法連線到後台，暫時使用預設值，變更將無法儲存，請檢查網路後重新整理頁面。';
+      render();
+    });
+  }
+
+  function saveConfig(nextConfig, successMsg){
+    config = nextConfig;
+    configSaving = true;
+    render();
+    apiPost({ action:'set_config', config: JSON.stringify(nextConfig) }).then(function(res){
+      configSaving = false;
+      if(res && res.ok){ if(successMsg) showToast(successMsg); }
+      else { showToast('儲存設定時發生問題：' + ((res&&res.error)||'未知錯誤')); }
+      render();
+    }).catch(function(){
+      configSaving = false;
+      showToast('無法連線到後台，設定未能儲存，請確認網路連線後再試一次。');
+      render();
+    });
+  }
+
+  function refreshOrders(){
+    ordersLoading = true;
+    return apiGet({ action:'list' }).then(function(res){
+      ordersLoading = false;
+      if(res && res.ok && Array.isArray(res.orders)){
+        liveOrders = res.orders;
+        ordersLoadError = '';
+      } else {
+        ordersLoadError = (res && res.error) || '讀取訂購資料失敗。';
+      }
+      render();
+    }).catch(function(){
+      ordersLoading = false;
+      ordersLoadError = '無法連線到後台，請確認網路連線是否正常。';
+      render();
+    });
+  }
+  function getOrders(){ return liveOrders || []; }
+
+  // ---------- order actions ----------
+  function submitOrder(name, note){
+    if(isOrderingClosed()){ showToast('本輪已截止收單，無法再送出訂購。'); return; }
+    var lines = cartLines();
+    if(!name || !name.trim() || lines.length===0) return;
+    var orderName = name.trim();
+    var orderNote = (note||'').trim();
+    var items = lines.map(function(l){ return { storeId:l.storeId, storeName:l.storeName, name:l.name, price:l.price, qty:l.qty }; });
+
+    draft = {};
+    submitBusy = true;
+    render();
+    apiPost({ action:'submit', name:orderName, note:orderNote, items:items }).then(function(res){
+      submitBusy = false;
+      if(res && res.ok){ showToast('已登記 ' + orderName + ' 的訂購，感謝！'); }
+      else { showToast('送出訂購時發生問題（' + ((res&&res.error)||'未知錯誤') + '），請再試一次。'); }
+      refreshOrders();
+    }).catch(function(){
+      submitBusy = false;
+      showToast('無法連線到後台，送出失敗，請確認網路連線後再試一次，或改請管理者協助登記。');
+      render();
+    });
+  }
+
+  function deleteOrder(orderId){
+    confirmTarget = null;
+    render();
+    apiPost({ action:'delete', orderId:orderId }).then(function(res){
+      if(res && res.ok){ showToast('已刪除該筆訂購紀錄。'); }
+      else { showToast('刪除時發生問題，請再試一次。'); }
+      refreshOrders();
+    }).catch(function(){
+      showToast('無法連線到後台，刪除失敗，請再試一次。');
+    });
+  }
+
+  function resetRound(){
+    confirmTarget = null;
+    render();
+    apiPost({ action:'reset' }).then(function(res){
+      if(res && res.ok){ showToast('已清空本輪所有訂購紀錄。'); }
+      else { showToast('清空時發生問題，請再試一次。'); }
+      refreshOrders();
+    }).catch(function(){
+      showToast('無法連線到後台，清空失敗，請再試一次。');
+    });
+    saveConfig(Object.assign({}, config, { deadline: null }));
+  }
+
+  // ---------- admin: passcode ----------
+  function changePasscode(newCode){
+    if(!newCode || !newCode.trim()) return;
+    saveConfig(Object.assign({}, config, { passcode: newCode.trim() }), '管理密碼已更新。');
+  }
+
+  // ---------- admin: deadline ----------
+  function setDeadline(localValue){
+    if(!localValue){ showToast('請先選擇結單時間。'); return; }
+    var d = new Date(localValue);
+    if(isNaN(d.getTime())){ showToast('時間格式不正確，請重新選擇。'); return; }
+    saveConfig(Object.assign({}, config, { deadline: d.toISOString() }), '已設定本輪結單時間。');
+  }
+  function clearDeadline(){
+    saveConfig(Object.assign({}, config, { deadline: null }), '已清除結單時間限制，訂購頁面將不再顯示截止時間。');
+  }
+
+  // ---------- admin: 今天吃什麼（本日嚴選） ----------
+  function setTodayPick(storeId){
+    if(!storeId){ showToast('請先選擇一家店。'); return; }
+    var store = findStore(storeId);
+    saveConfig(Object.assign({}, config, { todayPick: storeId }), '已設定本日嚴選：' + (store?store.name:storeId));
+  }
+  function clearTodayPick(){
+    saveConfig(Object.assign({}, config, { todayPick: null }), '已清除本日嚴選，訂購頁面恢復原本店家順序。');
+  }
+
+  // ---------- admin: menu item edit / remove ----------
+  function updateMenuItemAt(storeId, index, newName, newPrice){
+    newName = (newName||'').trim();
+    newPrice = Number(newPrice);
+    if(!newName || !newPrice || isNaN(newPrice) || newPrice<=0){ showToast('請輸入有效的品項名稱與價格。'); return; }
+    var nextStores = config.stores.map(function(s){
+      if(s.id!==storeId) return s;
+      var menu = s.menu.slice();
+      if(!menu[index]) return s;
+      menu[index] = { name:newName, price:newPrice };
+      return Object.assign({}, s, { menu: menu });
+    });
+    editingItem = null;
+    saveConfig(Object.assign({}, config, { stores: nextStores }), '已更新品項。');
+  }
+
+  function removeMenuItemAt(storeId, index){
+    var nextStores = config.stores.map(function(s){
+      if(s.id!==storeId) return s;
+      var menu = s.menu.slice();
+      menu.splice(index,1);
+      return Object.assign({}, s, { menu: menu });
+    });
+    saveConfig(Object.assign({}, config, { stores: nextStores }), '已移除品項。');
+  }
+
+  function addMenuItem(storeId){
+    var store = findStore(storeId);
+    if(!store) return;
+    var nameEl = document.getElementById('new-item-name-'+storeId);
+    var priceEl = document.getElementById('new-item-price-'+storeId);
+    var name = nameEl && nameEl.value.trim();
+    var price = priceEl && Number(priceEl.value);
+    if(!name || !price || isNaN(price) || price<=0){ showToast('請輸入品項名稱與有效的價格。'); return; }
+    var nextStores = config.stores.map(function(s){
+      if(s.id!==storeId) return s;
+      return Object.assign({}, s, { menu: s.menu.concat([{name:name, price:price}]) });
+    });
+    saveConfig(Object.assign({}, config, { stores: nextStores }), '已新增品項「' + name + '」。');
+  }
+
+  // ---------- admin: store delete ----------
+  function deleteStore(storeId){
+    var nextTodayPick = config.todayPick === storeId ? null : config.todayPick;
+    var next = Object.assign({}, config, { stores: config.stores.filter(function(s){ return s.id!==storeId; }), todayPick: nextTodayPick });
+    confirmTarget = null;
+    saveConfig(next, '已移除該店家。');
+  }
+
+  // ---------- admin: add store (manual only) ----------
+  function blankStoreForm(){
+    return {
+      name:'', tag:'', color:'amber', address:'', addressNote:'', mapUrl:'',
+      contacts:[{type:'phone', label:'', value:''}],
+      hours:[{days:'', time:''}],
+      closedNote:'', orderNote:'',
+      menu:[{name:'', price:''}]
+    };
+  }
+
+  function contactTypeOptions(sel){
+    return ['phone','line','fb','ig','other'].map(function(t){
+      var label = {phone:'電話',line:'LINE',fb:'Facebook',ig:'Instagram',other:'其他'}[t];
+      return '<option value="'+t+'"'+(t===sel?' selected':'')+'>'+label+'</option>';
+    }).join('');
+  }
+
+  function addStoreFromForm(){
+    var f = newStoreForm;
+    if(!f || !f.name.trim()) { showToast('請至少填寫店名。'); return; }
+    var store = {
+      id: uid('st'),
+      name: f.name.trim(),
+      tag: f.tag.trim() || '店家',
+      color: f.color==='teal' ? 'teal' : 'amber',
+      address: f.address.trim(),
+      addressNote: f.addressNote.trim(),
+      mapUrl: f.mapUrl.trim() || (f.address.trim() ? ('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(f.name.trim() + ' ' + f.address.trim())) : ''),
+      contacts: f.contacts.filter(function(c){ return c.value && c.value.trim(); }).map(function(c){ return { type:c.type, label:c.label.trim()||c.type, value:c.value.trim() }; }),
+      hours: f.hours.filter(function(h){ return h.days && h.time; }),
+      closedNote: f.closedNote.trim(),
+      orderNote: f.orderNote.trim(),
+      menu: f.menu.filter(function(m){ return m.name && m.name.trim() && m.price!=='' && !isNaN(Number(m.price)); }).map(function(m){ return { name:m.name.trim(), price:Number(m.price) }; }),
+      menuNote:''
+    };
+    var next = Object.assign({}, config, { stores: config.stores.concat([store]) });
+    newStoreForm = null;
+    saveConfig(next, '已新增店家「' + store.name + '」。');
+  }
+
+  // ---------- rendering ----------
+  function render(){
+    var app = document.getElementById('app');
+    if(!app) return;
+    app.innerHTML = renderBody();
+    bindEvents();
+  }
+
+  function renderMiniHeader(subtitle){
+    return '' +
+      '<div class="header">' +
+        '<div class="eyebrow">校內團購小工具</div>' +
+        '<h1 class="title">油廠好食光</h1>' +
+        (subtitle ? '<div class="subtitle">'+esc(subtitle)+'</div>' : '') +
+      '</div>';
+  }
+
+  function renderBody(){
+    if(configLoading){
+      return renderMiniHeader('資料載入中…') + '<div class="section"><div class="orders-empty">正在連線後台，請稍候…</div></div>';
+    }
+    if(isAdmin === 'pending'){
+      return renderMiniHeader('請輸入管理密碼以進入管理頁面') + renderLoginForm();
+    }
+    if(isAdmin === true && adminScreen){
+      return renderMiniHeader('管理頁面 — 店家與菜單維護') + renderAdminFullPanel();
+    }
+    return '' +
+      renderHeader() +
+      renderStores() +
+      renderCart() +
+      renderTotals() +
+      renderOrdersTable() +
+      renderAdminEntry() +
+      '<footer class="foot">美好的滋味，因為與你分享而更加美味。</footer>';
+  }
+
+  function renderHeader(){
+    var orders = getOrders();
+    var totalPeople = orders.length;
+    var totalAmt = orders.reduce(function(a,o){ return a+o.total; }, 0);
+    var totalItems = orders.reduce(function(a,o){ return a + o.items.reduce(function(b,i){ return b+i.qty; },0); }, 0);
+    var banner = '';
+    if(configLoadError){
+      banner += '<div class="readonly-banner">⚠️ ' + esc(configLoadError) + '</div>';
+    }
+    if(ordersLoadError){
+      banner += '<div class="readonly-banner">⚠️ 訂購資料暫時讀取不到最新狀態：' + esc(ordersLoadError) + '</div>';
+    }
+    var deadlineBanner = '';
+    if(config.deadline){
+      var dl = new Date(config.deadline);
+      var closed = isOrderingClosed();
+      deadlineBanner = '<div class="deadline-banner ' + (closed?'closed':'open') + '">' +
+        (closed
+          ? ('🔒 本輪已於 ' + formatDeadline(dl) + ' 截止收單，如需訂購請洽研發組是否開放下一輪。')
+          : ('⏰ 本輪結單時間：' + formatDeadline(dl) + '，請把握時間登記！')) +
+      '</div>';
+    }
+    return '' +
+      '<div class="header">' +
+        '<div class="eyebrow">校內團購小工具</div>' +
+        '<h1 class="title">油廠好食光</h1>' +
+        '<div class="subtitle">巷口的好味道，與夥伴共享。<br>忙碌日常，也有一點溫暖與小確幸。</div>' +
+        '<div class="summary-bar">' +
+          '<div class="summary-stat"><div class="num-big num">' + totalPeople + '</div><div class="lbl">已登記人數</div></div>' +
+          '<div class="summary-stat"><div class="num-big num">' + totalItems + '</div><div class="lbl">已登記份數</div></div>' +
+          '<div class="summary-stat"><div class="num-big num">' + fmt(totalAmt) + '</div><div class="lbl">目前累計金額</div></div>' +
+        '</div>' +
+        deadlineBanner +
+        banner +
+      '</div>';
+  }
+
+  function contactIcon(type){
+    return { phone:'📞', line:'💬', fb:'📘', ig:'📷' }[type] || '🔗';
+  }
+  function contactHref(c){
+    if(c.type==='phone') return 'tel:' + c.value.replace(/[^0-9+]/g,'');
+    if(c.url) return c.url;
+    if(c.type==='line') return 'https://line.me/ti/p/~' + encodeURIComponent(c.value.replace('@',''));
+    return null;
+  }
+
+  function renderStoreCard(store, isToday){
+    var contactsHtml = store.contacts.map(function(c){
+      var href = contactHref(c);
+      var label = (c.label ? esc(c.label)+'：' : '') + esc(c.value);
+      return href
+        ? '<a class="chip" href="'+esc(href)+'" target="_blank" rel="noopener">'+contactIcon(c.type)+' '+label+'</a>'
+        : '<span class="chip">'+contactIcon(c.type)+' '+label+'</span>';
+    }).join('');
+
+    var hoursHtml = store.hours.map(function(h){
+      return '<div class="meta-row"><span class="ico">🕒</span><span>'+esc(h.days)+'　'+esc(h.time)+'</span></div>';
+    }).join('');
+
+    var closedNow = isOrderingClosed();
+    var menuRows = store.menu.map(function(item){
+      var qty = draftQty(store.id, item.name);
+      var sub = qty>0 ? fmt(item.price*qty) : '';
+      var qtyCell = closedNow
+        ? '<span class="muted">已截止</span>'
+        : ('<span class="stepper">' +
+            '<button type="button" data-action="qty-dec" data-store="'+store.id+'" data-item="'+esc(item.name)+'" aria-label="減少">−</button>' +
+            '<span class="qty-val num">'+qty+'</span>' +
+            '<button type="button" data-action="qty-inc" data-store="'+store.id+'" data-item="'+esc(item.name)+'" aria-label="增加">＋</button>' +
+          '</span>');
+      return '<tr>' +
+        '<td>'+esc(item.name)+'</td>' +
+        '<td class="price-col num">'+fmt(item.price)+'</td>' +
+        '<td class="qty-col">'+qtyCell+'</td>' +
+        '<td class="sub-col num">'+sub+'</td>' +
+      '</tr>';
+    }).join('');
+
+    var storeDraftAmt = store.menu.reduce(function(a,item){ return a + item.price*draftQty(store.id,item.name); }, 0);
+
+    return '' +
+    '<div class="store-card'+(isToday?' today-pick':'')+'" data-color="'+store.color+'">' +
+      (isToday ? '<span class="today-pick-badge">🌟 本日嚴選</span>' : '') +
+      '<div>' +
+        '<span class="pill '+store.color+'">'+esc(store.tag)+'</span>' +
+        '<div class="store-name">'+esc(store.name)+'</div>' +
+      '</div>' +
+      '<div class="meta-list">' +
+        '<div class="meta-row"><span class="ico">📍</span><span>'+esc(store.address)+(store.addressNote? '　（'+esc(store.addressNote)+'）':'')+
+          (store.mapUrl ? ' <a href="'+esc(store.mapUrl)+'" target="_blank" rel="noopener">地圖</a>' : '') +
+        '</span></div>' +
+        hoursHtml +
+        (store.closedNote ? '<div class="meta-row"><span class="ico">🚫</span><span>'+esc(store.closedNote)+'</span></div>' : '') +
+        '<div class="chip-row">'+contactsHtml+'</div>' +
+      '</div>' +
+      (store.orderNote ? '<div class="note-box '+store.color+'">💡 '+esc(store.orderNote)+'</div>' : '') +
+      '<table class="menu-table"><thead><tr><th>品項</th><th class="price-col">單價</th><th class="qty-col">份數</th><th class="sub-col">小計</th></tr></thead><tbody>' + menuRows + '</tbody></table>' +
+      (store.menu.length===0 ? '<div class="muted">尚未建立品項，請於管理頁面新增。</div>' : '') +
+      (storeDraftAmt>0 ? '<div class="store-subtotal">此店小計：<b class="num">'+fmt(storeDraftAmt)+'</b></div>' : '') +
+      (store.menuNote ? '<div class="muted">'+esc(store.menuNote)+'</div>' : '') +
+    '</div>';
+  }
+
+  function renderStores(){
+    var stores = config.stores.slice();
+    var todayStore = config.todayPick ? findStore(config.todayPick) : null;
+    if(todayStore){
+      stores.sort(function(a,b){
+        if(a.id===config.todayPick) return -1;
+        if(b.id===config.todayPick) return 1;
+        return 0;
+      });
+    }
+    return '' +
+    '<div class="section">' +
+      '<div class="section-head"><div class="section-title">店家資訊與菜單</div><div class="section-hint">點選 ＋／− 選擇份數</div></div>' +
+      (todayStore ? '<div class="today-pick-banner">🌟 本日嚴選：'+esc(todayStore.name)+'　—　今天想吃這家的話，直接在下方點選份數即可！</div>' : '') +
+      '<div class="store-grid">' + stores.map(function(s){ return renderStoreCard(s, s.id===config.todayPick); }).join('') + '</div>' +
+    '</div>';
+  }
+
+  function renderCart(){
+    var closedNow = isOrderingClosed();
+    var lines = cartLines();
+    var byStore = {};
+    lines.forEach(function(l){ (byStore[l.storeId] = byStore[l.storeId]||[]).push(l); });
+    var groupsHtml = Object.keys(byStore).map(function(storeId){
+      var store = findStore(storeId);
+      var itemsHtml = byStore[storeId].map(function(l){
+        return '<div class="cart-item"><span class="name">'+esc(l.name)+' × '+l.qty+'</span><span class="amt num">'+fmt(l.amount)+'</span></div>';
+      }).join('');
+      return '<div class="cart-group"><div class="cart-group-title">'+esc(store?store.name:storeId)+'</div>'+itemsHtml+'</div>';
+    }).join('');
+
+    var body;
+    if(closedNow){
+      body = '<div class="cart-empty">🔒 本輪已截止收單，無法再登記訂購。如有需要請洽研發組是否開放下一輪。</div>';
+    } else if(lines.length===0){
+      body = '<div class="cart-empty">尚未選擇任何品項 — 請於上方店家菜單點選份數，再於下方填寫姓名送出。</div>';
+    } else {
+      body = groupsHtml + '<div class="cart-total-row"><span>目前合計</span><span class="grand num">'+fmt(cartTotal())+'</span></div>';
+    }
+
+    var formHtml = (!closedNow) ? (
+      '<div class="cart-form">' +
+        '<div class="field full"><label for="order-name">訂購人姓名 <span style="color:var(--danger)">*</span></label><input id="order-name" type="text" placeholder="例如：吳映親" /></div>' +
+        '<div class="field full"><label for="order-note">備註（選填）</label><input id="order-note" type="text" placeholder="例如：不要辣、幫忙帶到辦公室" /></div>' +
+        '<div class="full" style="display:flex; gap:10px; justify-content:flex-end;">' +
+          '<button type="button" class="btn btn-ghost" data-action="clear-cart" '+(submitBusy?'disabled':'')+'>清空選擇</button>' +
+          '<button type="button" class="btn btn-primary" data-action="submit-order" '+(submitBusy?'disabled':'')+'>'+(submitBusy?'送出中…':'送出訂購登記')+'</button>' +
+        '</div>' +
+      '</div>'
+    ) : '';
+
+    return '' +
+    '<div class="section">' +
+      '<div class="section-head"><div class="section-title">我的訂購清單</div></div>' +
+      '<div class="cart-card">' + body + formHtml + '</div>' +
+    '</div>';
+  }
+
+  function renderTotals(){
+    var orders = getOrders();
+    var cards = config.stores.map(function(store){
+      var tally = {};
+      orders.forEach(function(o){
+        o.items.forEach(function(it){ if(it.storeId===store.id) tally[it.name]=(tally[it.name]||0)+it.qty; });
+      });
+      var names = Object.keys(tally);
+      var storeTotal = 0;
+      var rows = names.map(function(n){
+        var item = store.menu.find(function(m){ return m.name===n; });
+        var price = item?item.price:0;
+        var amt = price*tally[n];
+        storeTotal += amt;
+        return '<tr><td>'+esc(n)+' × '+tally[n]+'</td><td class="num">'+fmt(amt)+'</td></tr>';
+      }).join('');
+      return '' +
+      '<div class="totals-card">' +
+        '<h3>'+esc(store.name)+'</h3>' +
+        (names.length===0
+          ? '<div class="muted">尚無人登記訂購。</div>'
+          : '<table class="totals-table">'+rows+'</table><div class="totals-store-total"><span>店家小計</span><span class="num">'+fmt(storeTotal)+'</span></div>') +
+        '<div style="margin-top:12px;"><button type="button" class="btn btn-ghost btn-small" data-action="copy-store" data-store="'+store.id+'">📋 複製此店訂購清單文字</button></div>' +
+      '</div>';
+    }).join('');
+
+    var grand = orders.reduce(function(a,o){ return a+o.total; }, 0);
+
+    return '' +
+    '<div class="section">' +
+      '<div class="section-head"><div class="section-title">團購總表</div><div class="section-hint">依店家彙整數量與金額，可複製文字傳給店家</div></div>' +
+      '<div class="totals-grid">' + cards + '</div>' +
+      '<div class="grand-total-card"><span class="lbl">全部店家合計</span><span class="val num">'+fmt(grand)+'</span></div>' +
+    '</div>';
+  }
+
+  function renderOrdersTable(){
+    var orders = getOrders();
+    var rows = orders.slice().reverse().map(function(o){
+      var itemsText = o.items.map(function(i){ return i.name+' ×'+i.qty; }).join('、');
+      return '<tr>' +
+        '<td>'+esc(o.name)+'</td>' +
+        '<td>'+itemsText+'</td>' +
+        '<td class="num">'+fmt(o.total)+'</td>' +
+        '<td>'+esc(o.note||'')+'</td>' +
+      '</tr>';
+    }).join('');
+
+    return '' +
+    '<div class="section">' +
+      '<div class="section-head"><div class="section-title">訂購明細（依人員）</div><div class="section-hint">共 '+orders.length+' 筆登記'+(ordersLoading ? '（更新中…）' : '')+'</div></div>' +
+      '<div class="orders-wrap">' +
+        (orders.length===0
+          ? '<div class="orders-empty">目前還沒有人登記訂購。</div>'
+          : '<table class="orders-table"><thead><tr><th>訂購人</th><th>品項</th><th>金額</th><th>備註</th></tr></thead><tbody>'+rows+'</tbody></table>') +
+      '</div>' +
+    '</div>';
+  }
+
+  function renderAdminEntry(){
+    var label = isAdmin===true ? '前往管理頁面' : '管理者登入';
+    var action = isAdmin===true ? 'goto-admin' : 'admin-open';
+    return '<div class="admin-bar"><button type="button" class="admin-link" data-action="'+action+'">'+label+'</button></div>';
+  }
+
+  function renderLoginForm(){
+    return '' +
+    '<div class="section">' +
+      '<div class="admin-panel">' +
+        '<h3>管理者登入</h3>' +
+        '<div class="admin-login">' +
+          '<div class="field"><label>請輸入管理密碼</label><input id="admin-passcode-input" type="password" /></div>' +
+          '<button type="button" class="btn btn-primary" data-action="admin-login-submit">登入</button>' +
+          '<button type="button" class="btn btn-ghost" data-action="admin-cancel">取消，回到訂購頁面</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function renderNewStoreForm(){
+    var f = newStoreForm;
+    var contactsHtml = f.contacts.map(function(c,i){
+      return '<div class="row-list-item">' +
+        '<select data-ns-field="contact-type" data-idx="'+i+'">'+contactTypeOptions(c.type)+'</select>' +
+        '<input placeholder="標籤（例如：佳佳）" value="'+esc(c.label)+'" data-ns-field="contact-label" data-idx="'+i+'" />' +
+        '<input placeholder="電話號碼／帳號／連結" value="'+esc(c.value)+'" data-ns-field="contact-value" data-idx="'+i+'" />' +
+        '<button type="button" class="btn btn-ghost btn-small" data-action="ns-remove-contact" data-idx="'+i+'">移除</button>' +
+      '</div>';
+    }).join('');
+
+    var hoursHtml = f.hours.map(function(h,i){
+      return '<div class="row-list-item">' +
+        '<input placeholder="營業日（例如：週一至週五）" value="'+esc(h.days)+'" data-ns-field="hours-days" data-idx="'+i+'" />' +
+        '<input placeholder="時段（例如：06:00–10:30）" value="'+esc(h.time)+'" data-ns-field="hours-time" data-idx="'+i+'" />' +
+        '<button type="button" class="btn btn-ghost btn-small" data-action="ns-remove-hours" data-idx="'+i+'">移除</button>' +
+      '</div>';
+    }).join('');
+
+    var menuHtml = f.menu.map(function(m,i){
+      return '<div class="row-list-item">' +
+        '<input placeholder="品項名稱" value="'+esc(m.name)+'" data-ns-field="menu-name" data-idx="'+i+'" />' +
+        '<input placeholder="價格" type="number" min="0" value="'+esc(m.price)+'" data-ns-field="menu-price" data-idx="'+i+'" style="max-width:110px;" />' +
+        '<button type="button" class="btn btn-ghost btn-small" data-action="ns-remove-menu" data-idx="'+i+'">移除</button>' +
+      '</div>';
+    }).join('');
+
+    return '' +
+    '<div class="admin-store-block">' +
+      '<h3>新增店家</h3>' +
+      '<div class="form-grid">' +
+        '<div class="field"><label>店名 *</label><input data-ns-field="name" value="'+esc(f.name)+'" /></div>' +
+        '<div class="field"><label>分類標籤</label><input data-ns-field="tag" placeholder="例如：飲料店" value="'+esc(f.tag)+'" /></div>' +
+        '<div class="field"><label>卡片配色</label><select data-ns-field="color"><option value="amber"'+(f.color==='amber'?' selected':'')+'>暖橘</option><option value="teal"'+(f.color==='teal'?' selected':'')+'>青綠</option></select></div>' +
+        '<div class="field"><label>地址</label><input data-ns-field="address" value="'+esc(f.address)+'" /></div>' +
+        '<div class="field full"><label>地址備註（選填）</label><input data-ns-field="addressNote" value="'+esc(f.addressNote)+'" /></div>' +
+        '<div class="field full"><label>Google 地圖連結（選填，留空會自動用店名+地址產生）</label><input data-ns-field="mapUrl" value="'+esc(f.mapUrl)+'" /></div>' +
+        '<div class="field full"><label>公休／備註</label><input data-ns-field="closedNote" value="'+esc(f.closedNote)+'" /></div>' +
+        '<div class="field full"><label>訂購提醒（選填）</label><textarea data-ns-field="orderNote" rows="2">'+esc(f.orderNote)+'</textarea></div>' +
+      '</div>' +
+      '<div class="divider"></div>' +
+      '<div class="muted" style="margin-bottom:6px;">聯絡方式</div>' +
+      '<div class="row-list">'+contactsHtml+'</div>' +
+      '<button type="button" class="btn btn-ghost btn-small" data-action="ns-add-contact">＋ 新增聯絡方式</button>' +
+      '<div class="divider"></div>' +
+      '<div class="muted" style="margin-bottom:6px;">營業時間</div>' +
+      '<div class="row-list">'+hoursHtml+'</div>' +
+      '<button type="button" class="btn btn-ghost btn-small" data-action="ns-add-hours">＋ 新增時段</button>' +
+      '<div class="divider"></div>' +
+      '<div class="muted" style="margin-bottom:6px;">菜單品項</div>' +
+      '<div class="row-list">'+menuHtml+'</div>' +
+      '<button type="button" class="btn btn-ghost btn-small" data-action="ns-add-menu">＋ 新增品項</button>' +
+      '<div class="divider"></div>' +
+      '<div style="display:flex; gap:10px; justify-content:flex-end;">' +
+        '<button type="button" class="btn btn-ghost" data-action="ns-cancel">取消</button>' +
+        '<button type="button" class="btn btn-primary" data-action="ns-submit">新增此店家</button>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function renderExistingStoreAdmin(store){
+    var itemsHtml = store.menu.map(function(m,i){
+      if(editingItem && editingItem.storeId===store.id && editingItem.index===i){
+        return '<div class="item-edit-row">' +
+          '<input id="edit-name-'+store.id+'-'+i+'" value="'+esc(m.name)+'" style="flex:2;" />' +
+          '<input id="edit-price-'+store.id+'-'+i+'" type="number" min="0" value="'+esc(m.price)+'" style="max-width:100px;" />' +
+          '<button type="button" class="btn btn-primary btn-small" data-action="save-menu-item" data-store="'+store.id+'" data-idx="'+i+'">儲存</button>' +
+          '<button type="button" class="btn btn-ghost btn-small" data-action="cancel-menu-item-edit">取消</button>' +
+        '</div>';
+      }
+      return '<div class="row-list-item"><span style="flex:2;">'+esc(m.name)+'</span><span class="num" style="flex:none;">'+fmt(m.price)+'</span>' +
+        '<button type="button" class="btn btn-ghost btn-small" data-action="edit-menu-item" data-store="'+store.id+'" data-idx="'+i+'">編輯</button>' +
+        '<button type="button" class="btn btn-ghost btn-small" data-action="remove-menu-item" data-store="'+store.id+'" data-idx="'+i+'">移除</button></div>';
+    }).join('');
+
+    var delStoreHtml = confirmTarget === ('store:'+store.id)
+      ? '<span class="confirm-inline">確定刪除整間店家？<button type="button" class="btn btn-danger btn-small" data-action="confirm-delete-store" data-store="'+store.id+'">刪除</button><button type="button" class="btn btn-ghost btn-small" data-action="cancel-confirm">取消</button></span>'
+      : '<button type="button" class="btn btn-ghost btn-small" data-action="ask-delete-store" data-store="'+store.id+'">刪除此店家</button>';
+
+    return '' +
+    '<details class="admin-store-block" open>' +
+      '<summary>'+esc(store.name)+'（'+store.menu.length+' 個品項）</summary>' +
+      '<div style="margin-top:10px;">' +
+        '<div class="muted" style="margin-bottom:6px;">既有品項（可編輯名稱／價格，或移除）</div>' +
+        '<div class="row-list">'+itemsHtml+'</div>' +
+        '<div class="row-list-item" style="margin-top:8px;">' +
+          '<input id="new-item-name-'+store.id+'" placeholder="新品項名稱" />' +
+          '<input id="new-item-price-'+store.id+'" placeholder="價格" type="number" min="0" style="max-width:110px;" />' +
+          '<button type="button" class="btn btn-primary btn-small" data-action="add-menu-item" data-store="'+store.id+'">新增品項</button>' +
+        '</div>' +
+        '<div class="divider"></div>' +
+        delStoreHtml +
+      '</div>' +
+    '</details>';
+  }
+
+  function renderAdminOrdersList(){
+    var orders = getOrders();
+    if(orders.length===0){
+      return '<div class="muted">目前尚無人登記訂購。</div>';
+    }
+    var rows = orders.slice().reverse().map(function(o){
+      var itemsText = o.items.map(function(i){ return i.name+' ×'+i.qty; }).join('、');
+      var delHtml = confirmTarget === ('order:'+o.id)
+        ? '<span class="confirm-inline">確定刪除？<button type="button" class="btn btn-danger btn-small" data-action="confirm-delete-order" data-order="'+o.id+'">刪除</button><button type="button" class="btn btn-ghost btn-small" data-action="cancel-confirm">取消</button></span>'
+        : '<button type="button" class="btn btn-ghost btn-small" data-action="ask-delete-order" data-order="'+o.id+'">刪除</button>';
+      return '<div class="row-list-item">' +
+        '<span style="flex:1.2; font-weight:700;">'+esc(o.name)+'</span>' +
+        '<span style="flex:2.5;" class="muted">'+esc(itemsText)+(o.note?'（備註：'+esc(o.note)+'）':'')+'</span>' +
+        '<span class="num" style="flex:none;">'+fmt(o.total)+'</span>' +
+        delHtml +
+      '</div>';
+    }).join('');
+    return '<div class="row-list">' + rows + '</div>';
+  }
+
+  function renderAdminFullPanel(){
+    var resetHtml = confirmTarget === 'reset-round'
+      ? '<span class="confirm-inline">確定清空本輪所有訂購紀錄（含結單時間）？<button type="button" class="btn btn-danger btn-small" data-action="confirm-reset">清空</button><button type="button" class="btn btn-ghost btn-small" data-action="cancel-confirm">取消</button></span>'
+      : '<button type="button" class="btn btn-danger btn-small" data-action="ask-reset">清空本輪所有訂購紀錄</button>';
+
+    var deadlineStatus = config.deadline
+      ? ('<div class="muted" style="margin:6px 0 10px;">目前設定：' + esc(formatDeadline(new Date(config.deadline))) + (isOrderingClosed() ? '　<b style="color:var(--danger);">（已截止）</b>' : '　<b style="color:var(--accent);">（尚未截止）</b>') + '</div>')
+      : '<div class="muted" style="margin:6px 0 10px;">目前尚未設定結單時間，訂購頁面不會顯示截止提醒。</div>';
+
+    var todayPickStore = config.todayPick ? findStore(config.todayPick) : null;
+    var todayPickStatus = config.todayPick
+      ? ('<div class="muted" style="margin:6px 0 10px;">目前設定：<b style="color:var(--accent);">' + (todayPickStore ? esc(todayPickStore.name) : '（該店家已被移除，請重新選擇）') + '</b></div>')
+      : '<div class="muted" style="margin:6px 0 10px;">目前尚未設定，訂購頁面依原順序顯示所有店家。</div>';
+    var todayPickOptions = config.stores.map(function(s){
+      return '<option value="'+esc(s.id)+'"'+(config.todayPick===s.id?' selected':'')+'>'+esc(s.name)+'</option>';
+    }).join('');
+
+    return '' +
+    '<div class="section">' +
+      '<div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;">' +
+        '<button type="button" class="btn btn-primary" data-action="goto-orders">← 回到訂購頁面</button>' +
+        '<button type="button" class="btn btn-ghost" data-action="admin-logout">登出管理模式</button>' +
+        (configSaving ? '<span class="muted">儲存中…</span>' : '') +
+      '</div>' +
+      '<div class="admin-panel">' +
+        '<h3>本輪結單時間</h3>' +
+        '<div class="muted" style="margin-bottom:8px;">設定後，訂購頁面頂端會顯示結單時間；時間一到會自動關閉訂購功能（品項無法再勾選、無法送出登記）。清空本輪訂購時會一併清除此設定，別忘了每輪重新設定一次。</div>' +
+        deadlineStatus +
+        '<div class="row-list-item">' +
+          '<input id="deadline-input" type="datetime-local" value="'+(config.deadline ? toLocalInputValue(config.deadline) : '')+'" style="max-width:220px;" />' +
+          '<button type="button" class="btn btn-primary btn-small" data-action="set-deadline">設定結單時間</button>' +
+          (config.deadline ? '<button type="button" class="btn btn-ghost btn-small" data-action="clear-deadline">清除限制</button>' : '') +
+        '</div>' +
+        '<div class="divider"></div>' +
+        '<h3>今天吃什麼（本日嚴選）</h3>' +
+        '<div class="muted" style="margin-bottom:8px;">選定的店家會自動排到訂購頁面最上方，並加上「本日嚴選」標記，方便大家一眼就看到今天要訂哪一家。建議每天早上更新一次。</div>' +
+        todayPickStatus +
+        '<div class="row-list-item">' +
+          '<select id="today-pick-select" style="max-width:240px;">' + todayPickOptions + '</select>' +
+          '<button type="button" class="btn btn-primary btn-small" data-action="set-today-pick">設為本日嚴選</button>' +
+          (config.todayPick ? '<button type="button" class="btn btn-ghost btn-small" data-action="clear-today-pick">清除</button>' : '') +
+        '</div>' +
+        '<div class="divider"></div>' +
+        '<h3>本輪團購管理</h3>' +
+        '<div class="muted" style="margin-bottom:8px;">共 '+getOrders().length+' 筆登記，可個別刪除錯誤的訂購，或一次清空重新開始下一輪。</div>' +
+        renderAdminOrdersList() +
+        '<div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">' +
+          '<button type="button" class="btn btn-primary btn-small" data-action="export-excel">📊 匯出本輪訂單 Excel</button>' +
+          resetHtml +
+        '</div>' +
+        '<div class="muted" style="margin-top:8px;">Excel 內含「訂單摘要、店家聯絡資訊、訂購明細、店家彙總」四個工作表，建議於結單後匯出作為正式訂購紀錄；結單前也可先行匯出查看目前進度。</div>' +
+        '<div class="divider"></div>' +
+        '<h3>新增店家</h3>' +
+        (newStoreForm ? renderNewStoreForm() : '<button type="button" class="btn btn-ghost" data-action="ns-open">＋ 新增店家</button>') +
+        '<div class="divider"></div>' +
+        '<h3>既有店家管理</h3>' +
+        '<div class="muted" style="margin-bottom:8px;">編輯／新增／移除品項，也可以刪除整間店家。</div>' +
+        config.stores.map(renderExistingStoreAdmin).join('') +
+        '<div class="divider"></div>' +
+        '<h3>管理密碼</h3>' +
+        '<div class="row-list-item">' +
+          '<input id="new-passcode" type="text" placeholder="輸入新密碼" style="max-width:160px;" />' +
+          '<button type="button" class="btn btn-ghost btn-small" data-action="change-passcode">更新密碼</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  // ---------- event delegation ----------
+  function bindEvents(){
+    var app = document.getElementById('app');
+
+    app.onclick = function(e){
+      var el = e.target.closest('[data-action]');
+      if(!el) return;
+      var action = el.getAttribute('data-action');
+      var store = el.getAttribute('data-store');
+      var item = el.getAttribute('data-item');
+      var idx = el.getAttribute('data-idx');
+      var orderId = el.getAttribute('data-order');
+
+      if(action==='qty-inc'){ if(isOrderingClosed()){ showToast('本輪已截止收單。'); return; } setDraftQty(store, item, draftQty(store,item)+1); return; }
+      if(action==='qty-dec'){ if(isOrderingClosed()){ showToast('本輪已截止收單。'); return; } setDraftQty(store, item, draftQty(store,item)-1); return; }
+      if(action==='clear-cart'){ draft = {}; render(); return; }
+      if(action==='submit-order'){
+        if(isOrderingClosed()){ showToast('本輪已截止收單，無法再送出訂購。'); render(); return; }
+        var nameEl = document.getElementById('order-name');
+        var noteEl = document.getElementById('order-note');
+        var name = nameEl ? nameEl.value : '';
+        if(!name || !name.trim()){ showToast('請先填寫訂購人姓名再送出。'); if(nameEl) nameEl.focus(); return; }
+        if(cartLines().length===0){ showToast('請先於上方店家菜單選擇至少一項餐點。'); return; }
+        submitOrder(name, noteEl?noteEl.value:'');
+        return;
+      }
+      if(action==='copy-store'){ copyStoreOrderText(store); return; }
+
+      if(action==='admin-open'){ isAdmin = 'pending'; render(); return; }
+      if(action==='admin-cancel'){ isAdmin = false; render(); return; }
+      if(action==='goto-admin'){ adminScreen = true; render(); return; }
+      if(action==='goto-orders'){ adminScreen = false; render(); return; }
+      if(action==='admin-logout'){ isAdmin = false; adminScreen = false; newStoreForm=null; confirmTarget=null; editingItem=null; render(); return; }
+      if(action==='admin-login-submit'){
+        var pcEl = document.getElementById('admin-passcode-input');
+        if(pcEl && pcEl.value === config.passcode){ isAdmin = true; adminScreen = true; showToast('已進入管理頁面。'); }
+        else { showToast('密碼不正確。'); }
+        render();
+        return;
+      }
+      if(action==='change-passcode'){
+        var npEl = document.getElementById('new-passcode');
+        changePasscode(npEl ? npEl.value : '');
+        return;
+      }
+
+      if(action==='ask-delete-store'){ confirmTarget = 'store:'+store; render(); return; }
+      if(action==='confirm-delete-store'){ deleteStore(store); return; }
+      if(action==='ask-reset'){ confirmTarget = 'reset-round'; render(); return; }
+      if(action==='confirm-reset'){ resetRound(); return; }
+      if(action==='cancel-confirm'){ confirmTarget = null; render(); return; }
+      if(action==='ask-delete-order'){ confirmTarget = 'order:'+orderId; render(); return; }
+      if(action==='confirm-delete-order'){ deleteOrder(orderId); return; }
+      if(action==='set-deadline'){
+        var dlEl = document.getElementById('deadline-input');
+        setDeadline(dlEl ? dlEl.value : '');
+        return;
+      }
+      if(action==='clear-deadline'){ clearDeadline(); return; }
+      if(action==='set-today-pick'){
+        var tpEl = document.getElementById('today-pick-select');
+        setTodayPick(tpEl ? tpEl.value : '');
+        return;
+      }
+      if(action==='clear-today-pick'){ clearTodayPick(); return; }
+      if(action==='export-excel'){ exportOrdersToExcel(); return; }
+
+      if(action==='add-menu-item'){ addMenuItem(store); return; }
+      if(action==='remove-menu-item'){ removeMenuItemAt(store, Number(idx)); return; }
+      if(action==='edit-menu-item'){ editingItem = { storeId:store, index:Number(idx) }; render(); return; }
+      if(action==='cancel-menu-item-edit'){ editingItem = null; render(); return; }
+      if(action==='save-menu-item'){
+        var nEl = document.getElementById('edit-name-'+store+'-'+idx);
+        var pEl = document.getElementById('edit-price-'+store+'-'+idx);
+        updateMenuItemAt(store, Number(idx), nEl?nEl.value:'', pEl?pEl.value:'');
+        return;
+      }
+
+      if(action==='ns-open'){ newStoreForm = blankStoreForm(); render(); return; }
+      if(action==='ns-cancel'){ newStoreForm = null; render(); return; }
+      if(action==='ns-submit'){ addStoreFromForm(); return; }
+      if(action==='ns-add-contact'){ newStoreForm.contacts.push({type:'phone',label:'',value:''}); render(); return; }
+      if(action==='ns-remove-contact'){ newStoreForm.contacts.splice(Number(idx),1); render(); return; }
+      if(action==='ns-add-hours'){ newStoreForm.hours.push({days:'',time:''}); render(); return; }
+      if(action==='ns-remove-hours'){ newStoreForm.hours.splice(Number(idx),1); render(); return; }
+      if(action==='ns-add-menu'){ newStoreForm.menu.push({name:'',price:''}); render(); return; }
+      if(action==='ns-remove-menu'){ newStoreForm.menu.splice(Number(idx),1); render(); return; }
+    };
+
+    app.oninput = function(e){
+      var el = e.target;
+      var nsField = el.getAttribute('data-ns-field');
+      if(!nsField || !newStoreForm) return;
+      var idx = el.getAttribute('data-idx');
+      if(nsField==='contact-type') newStoreForm.contacts[idx].type = el.value;
+      else if(nsField==='contact-label') newStoreForm.contacts[idx].label = el.value;
+      else if(nsField==='contact-value') newStoreForm.contacts[idx].value = el.value;
+      else if(nsField==='hours-days') newStoreForm.hours[idx].days = el.value;
+      else if(nsField==='hours-time') newStoreForm.hours[idx].time = el.value;
+      else if(nsField==='menu-name') newStoreForm.menu[idx].name = el.value;
+      else if(nsField==='menu-price') newStoreForm.menu[idx].price = el.value;
+      else if(nsField==='name') newStoreForm.name = el.value;
+      else if(nsField==='tag') newStoreForm.tag = el.value;
+      else if(nsField==='color') newStoreForm.color = el.value;
+      else if(nsField==='address') newStoreForm.address = el.value;
+      else if(nsField==='addressNote') newStoreForm.addressNote = el.value;
+      else if(nsField==='mapUrl') newStoreForm.mapUrl = el.value;
+      else if(nsField==='closedNote') newStoreForm.closedNote = el.value;
+      else if(nsField==='orderNote') newStoreForm.orderNote = el.value;
+    };
+  }
+
+  function copyStoreOrderText(storeId){
+    var store = findStore(storeId);
+    if(!store) return;
+    var tally = {};
+    getOrders().forEach(function(o){
+      o.items.forEach(function(it){
+        if(it.storeId!==storeId) return;
+        tally[it.name] = (tally[it.name]||0) + it.qty;
+      });
+    });
+    var names = Object.keys(tally);
+    var lines = ['【' + store.name + '】團購訂購清單'];
+    var totalQty = 0, totalAmt = 0;
+    if(names.length===0){
+      lines.push('（目前尚無人登記訂購）');
+    } else {
+      names.forEach(function(n){
+        var item = store.menu.find(function(m){ return m.name===n; });
+        var price = item ? item.price : 0;
+        var qty = tally[n];
+        totalQty += qty; totalAmt += price*qty;
+        lines.push(n + ' x ' + qty + (item ? '（' + fmt(price*qty) + '）' : ''));
+      });
+      lines.push('共 ' + totalQty + ' 份，合計 ' + fmt(totalAmt));
+    }
+    var text = lines.join('\n');
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){
+        showToast('已複製「' + store.name + '」訂購清單，可直接貼到 LINE 傳給店家。');
+      }).catch(function(){
+        showToast('複製失敗，請手動選取文字複製。');
+      });
+    } else {
+      showToast('此瀏覽器不支援自動複製，請手動選取文字。');
+    }
+  }
+
+  // ---------- admin: export orders to Excel ----------
+  function exportTimestamp(d){
+    d = d || new Date();
+    var pad = function(n){ return String(n).padStart(2,'0'); };
+    return d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'_'+pad(d.getHours())+pad(d.getMinutes());
+  }
+  function contactsText(store){
+    var labelMap = {phone:'電話', line:'LINE', fb:'Facebook', ig:'Instagram', other:'聯絡'};
+    return store.contacts.map(function(c){
+      var label = labelMap[c.type] || '聯絡';
+      var tag = (c.label && c.label!==label) ? (label+'／'+c.label) : label;
+      return tag + '：' + c.value;
+    }).join('；');
+  }
+  function hoursText(store){
+    return store.hours.map(function(h){ return h.days+' '+h.time; }).join('；');
+  }
+
+  function buildOrdersWorkbook(){
+    var orders = getOrders();
+    var wb = XLSX.utils.book_new();
+    var totalPeople = orders.length;
+    var totalItems = orders.reduce(function(a,o){ return a + o.items.reduce(function(b,i){ return b+i.qty; },0); }, 0);
+    var totalAmt = orders.reduce(function(a,o){ return a+o.total; }, 0);
+    var deadlineText = config.deadline ? formatDeadline(new Date(config.deadline)) : '未設定';
+
+    var summaryRows = [
+      ['油廠好食光 — 團購訂單摘要'],
+      [],
+      ['結單時間', deadlineText],
+      ['匯出時間', formatDeadline(new Date())],
+      ['已登記人數', totalPeople],
+      ['已登記份數', totalItems],
+      ['總金額', totalAmt]
+    ];
+    var wsSummary = XLSX.utils.aoa_to_sheet(summaryRows);
+    wsSummary['!cols'] = [{wch:16},{wch:26}];
+    XLSX.utils.book_append_sheet(wb, wsSummary, '訂單摘要');
+
+    var storeHeader = ['店名','分類','地址','地址備註','聯絡方式','營業時間','公休／備註','訂購提醒','Google地圖連結'];
+    var storeRows = config.stores.map(function(s){
+      return [s.name, s.tag, s.address, s.addressNote, contactsText(s), hoursText(s), s.closedNote, s.orderNote, s.mapUrl];
+    });
+    var wsStores = XLSX.utils.aoa_to_sheet([storeHeader].concat(storeRows));
+    wsStores['!cols'] = [{wch:20},{wch:10},{wch:26},{wch:20},{wch:34},{wch:20},{wch:14},{wch:36},{wch:40}];
+    XLSX.utils.book_append_sheet(wb, wsStores, '店家聯絡資訊');
+
+    var orderHeader = ['訂購人','店家','品項','單價','數量','小計','備註','送出時間'];
+    var orderRows = [];
+    orders.forEach(function(o){
+      var t = new Date(o.submittedAt);
+      o.items.forEach(function(it){
+        orderRows.push([o.name, it.storeName, it.name, it.price, it.qty, it.price*it.qty, o.note||'', formatDeadline(t)]);
+      });
+    });
+    var wsOrders = XLSX.utils.aoa_to_sheet([orderHeader].concat(orderRows));
+    wsOrders['!cols'] = [{wch:12},{wch:20},{wch:14},{wch:8},{wch:6},{wch:8},{wch:20},{wch:18}];
+    XLSX.utils.book_append_sheet(wb, wsOrders, '訂購明細');
+
+    var sumHeader = ['店家','品項','數量','金額'];
+    var sumRows = [];
+    config.stores.forEach(function(store){
+      var tally = {};
+      orders.forEach(function(o){
+        o.items.forEach(function(it){ if(it.storeId===store.id) tally[it.name]=(tally[it.name]||0)+it.qty; });
+      });
+      var names = Object.keys(tally);
+      if(names.length===0) return;
+      var storeTotal = 0;
+      names.forEach(function(n){
+        var item = store.menu.find(function(m){ return m.name===n; });
+        var price = item?item.price:0;
+        var amt = price*tally[n];
+        storeTotal += amt;
+        sumRows.push([store.name, n+' × '+tally[n], tally[n], amt]);
+      });
+      sumRows.push([store.name+' 小計', '', '', storeTotal]);
+      sumRows.push([]);
+    });
+    sumRows.push(['全部店家合計', '', '', totalAmt]);
+    var wsSum = XLSX.utils.aoa_to_sheet([sumHeader].concat(sumRows));
+    wsSum['!cols'] = [{wch:20},{wch:24},{wch:8},{wch:10}];
+    XLSX.utils.book_append_sheet(wb, wsSum, '店家彙總');
+
+    return wb;
+  }
+
+  function exportOrdersToExcel(){
+    if(typeof XLSX === 'undefined'){ showToast('Excel 匯出元件尚未載入完成，請重新整理頁面後再試一次。'); return; }
+    if(getOrders().length===0){ showToast('目前尚無訂購資料可匯出。'); return; }
+    try{
+      var wb = buildOrdersWorkbook();
+      var wbout = XLSX.write(wb, { bookType:'xlsx', type:'array' });
+      var blob = new Blob([wbout], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      var fname = '油廠好食光_團購訂單_' + exportTimestamp() + '.xlsx';
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = fname;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+      showToast('已下載 Excel 檔案，請至瀏覽器下載位置查看。');
+    }catch(e){
+      showToast('產生 Excel 檔案時發生問題，請再試一次，或改用「複製文字」功能。');
+    }
+  }
+
+  render();
+  loadConfig().then(function(){ refreshOrders(); });
+  setInterval(function(){
+    if(config && config.deadline && !(isAdmin===true && adminScreen)) render();
+  }, 60000);
+  setInterval(function(){
+    if(!newStoreForm && !editingItem){ refreshOrders(); }
+  }, 20000);
+})();
+</script>
+</body>
+</html>
