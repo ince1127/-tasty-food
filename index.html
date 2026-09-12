@@ -237,6 +237,7 @@
   var adminScreen = false;
   var newStoreForm = null;
   var editingItem = null;
+  var editingStoreInfo = null; // { id: storeId, form: {...} } | null
   var confirmTarget = null;
 
   function fmt(n){ return '$' + new Intl.NumberFormat('zh-Hant-TW').format(n||0); }
@@ -499,6 +500,7 @@
     var nextTodayPick = config.todayPick === storeId ? null : config.todayPick;
     var next = Object.assign({}, config, { stores: config.stores.filter(function(s){ return s.id!==storeId; }), todayPick: nextTodayPick });
     confirmTarget = null;
+    if(editingStoreInfo && editingStoreInfo.id === storeId){ editingStoreInfo = null; }
     saveConfig(next, '已移除該店家。');
   }
 
@@ -511,6 +513,90 @@
       closedNote:'', orderNote:'',
       menu:[{name:'', price:''}]
     };
+  }
+
+  // ---------- 批次貼上「店家資訊」（地址／電話／營業時間等，非菜單）----------
+  // 格式：一行一個欄位，「欄位名稱: 內容」；電話／LINE／FB／IG／營業 可重複多行。
+  var STORE_INFO_CONTACT_KEYS = { '電話':'phone', 'LINE':'line', 'FB':'fb', 'FACEBOOK':'fb', 'IG':'ig', 'INSTAGRAM':'ig', '其他':'other', '聯絡':'other' };
+  function parseStoreInfoText(text){
+    var lines = String(text||'').split(/\r?\n/);
+    var out = { name:null, tag:null, color:null, address:null, addressNote:null, mapUrl:null, closedNote:null, orderNote:null, contacts:[], hours:[] };
+    lines.forEach(function(line){
+      line = line.trim();
+      if(!line) return;
+      var m = line.match(/^([^:：]+)[:：]\s*(.*)$/);
+      if(!m) return;
+      var key = m[1].trim();
+      var val = m[2].trim();
+      if(!val) return;
+      var contactType = STORE_INFO_CONTACT_KEYS[key] || STORE_INFO_CONTACT_KEYS[key.toUpperCase()];
+      if(key==='店名'){ out.name = val; }
+      else if(key==='分類'){ out.tag = val; }
+      else if(key==='配色'){ out.color = (val==='青綠' || val.toLowerCase()==='teal') ? 'teal' : 'amber'; }
+      else if(key==='地址'){ out.address = val; }
+      else if(key==='地址備註'){ out.addressNote = val; }
+      else if(key==='地圖連結'){ out.mapUrl = val; }
+      else if(key==='公休備註'){ out.closedNote = val; }
+      else if(key==='訂購提醒'){ out.orderNote = val; }
+      else if(key==='營業'){
+        var hp = val.split(/,|，/);
+        out.hours.push({ days:(hp[0]||'').trim(), time:(hp.slice(1).join(',')||'').trim() });
+      } else if(contactType){
+        var cp = val.split(/,|，/);
+        var label, value;
+        if(cp.length>=2){ label = cp[0].trim(); value = cp.slice(1).join(',').trim(); }
+        else { label=''; value = cp[0].trim(); }
+        out.contacts.push({ type:contactType, label:label, value:value });
+      }
+    });
+    return out;
+  }
+  function applyParsedInfoToForm(form, parsed){
+    if(parsed.name) form.name = parsed.name;
+    if(parsed.tag) form.tag = parsed.tag;
+    if(parsed.color) form.color = parsed.color;
+    if(parsed.address) form.address = parsed.address;
+    if(parsed.addressNote) form.addressNote = parsed.addressNote;
+    if(parsed.mapUrl) form.mapUrl = parsed.mapUrl;
+    if(parsed.closedNote) form.closedNote = parsed.closedNote;
+    if(parsed.orderNote) form.orderNote = parsed.orderNote;
+    if(parsed.contacts.length) form.contacts = parsed.contacts;
+    if(parsed.hours.length) form.hours = parsed.hours;
+  }
+  var STORE_INFO_PASTE_PLACEHOLDER = '店名: 蛋餅里家 楠梓後昌店\n分類: 早餐蛋餅\n配色: amber\n地址: 高雄市楠梓區後昌路797巷135號\n地址備註: 楠梓自強市場旁\n地圖連結: https://...\n公休備註: 公休：星期三\n訂購提醒: 建議前一天預訂\n電話: 佳佳,0916-817968\nLINE: LINE,@rzt0698c\n營業: 週一至週五,06:00-10:30';
+
+  function storeInfoFormFromStore(store){
+    return {
+      name: store.name, tag: store.tag, color: store.color,
+      address: store.address, addressNote: store.addressNote, mapUrl: store.mapUrl,
+      contacts: store.contacts.map(function(c){ return Object.assign({}, c); }),
+      hours: store.hours.map(function(h){ return Object.assign({}, h); }),
+      closedNote: store.closedNote, orderNote: store.orderNote
+    };
+  }
+
+  function saveStoreInfoEdit(){
+    var f = editingStoreInfo && editingStoreInfo.form;
+    var storeId = editingStoreInfo && editingStoreInfo.id;
+    if(!f || !storeId) return;
+    if(!f.name.trim()){ showToast('請至少填寫店名。'); return; }
+    var nextStores = config.stores.map(function(s){
+      if(s.id!==storeId) return s;
+      return Object.assign({}, s, {
+        name: f.name.trim(),
+        tag: f.tag.trim() || '店家',
+        color: f.color==='teal' ? 'teal' : 'amber',
+        address: f.address.trim(),
+        addressNote: f.addressNote.trim(),
+        mapUrl: f.mapUrl.trim(),
+        contacts: f.contacts.filter(function(c){ return c.value && c.value.trim(); }).map(function(c){ return { type:c.type, label:c.label.trim()||c.type, value:c.value.trim() }; }),
+        hours: f.hours.filter(function(h){ return h.days && h.time; }),
+        closedNote: f.closedNote.trim(),
+        orderNote: f.orderNote.trim()
+      });
+    });
+    editingStoreInfo = null;
+    saveConfig(Object.assign({}, config, { stores: nextStores }), '已更新店家資訊。');
   }
 
   // ---------- 批次貼上文字匯入菜單（品項,價格 一行一項）----------
@@ -868,6 +954,10 @@
     return '' +
     '<div class="admin-store-block">' +
       '<h3>新增店家</h3>' +
+      '<div class="muted" style="margin-bottom:6px;">可先整批貼上店家資訊（地址、電話、營業時間等），下方欄位會自動帶入，再檢查調整即可；也可以不貼，直接逐欄手動填寫。格式說明：一行一個欄位「欄位名稱: 內容」，電話／LINE／FB／IG／營業時間可重複多行。</div>' +
+      '<textarea id="ns-info-batch" rows="6" style="width:100%;" placeholder="'+esc(STORE_INFO_PASTE_PLACEHOLDER)+'"></textarea>' +
+      '<div style="margin:6px 0 4px;"><button type="button" class="btn btn-ghost btn-small" data-action="ns-info-batch-import">批次貼入下方欄位</button></div>' +
+      '<div class="divider"></div>' +
       '<div class="form-grid">' +
         '<div class="field"><label>店名 *</label><input data-ns-field="name" value="'+esc(f.name)+'" /></div>' +
         '<div class="field"><label>分類標籤</label><input data-ns-field="tag" placeholder="例如：飲料店" value="'+esc(f.tag)+'" /></div>' +
@@ -901,6 +991,58 @@
     '</div>';
   }
 
+  function renderEditStoreInfoForm(){
+    var f = editingStoreInfo.form;
+    var contactsHtml = f.contacts.map(function(c,i){
+      return '<div class="row-list-item">' +
+        '<select data-es-field="contact-type" data-idx="'+i+'">'+contactTypeOptions(c.type)+'</select>' +
+        '<input placeholder="標籤（例如：佳佳）" value="'+esc(c.label)+'" data-es-field="contact-label" data-idx="'+i+'" />' +
+        '<input placeholder="電話號碼／帳號／連結" value="'+esc(c.value)+'" data-es-field="contact-value" data-idx="'+i+'" />' +
+        '<button type="button" class="btn btn-ghost btn-small" data-action="es-remove-contact" data-idx="'+i+'">移除</button>' +
+      '</div>';
+    }).join('');
+
+    var hoursHtml = f.hours.map(function(h,i){
+      return '<div class="row-list-item">' +
+        '<input placeholder="營業日（例如：週一至週五）" value="'+esc(h.days)+'" data-es-field="hours-days" data-idx="'+i+'" />' +
+        '<input placeholder="時段（例如：06:00–10:30）" value="'+esc(h.time)+'" data-es-field="hours-time" data-idx="'+i+'" />' +
+        '<button type="button" class="btn btn-ghost btn-small" data-action="es-remove-hours" data-idx="'+i+'">移除</button>' +
+      '</div>';
+    }).join('');
+
+    return '' +
+    '<div class="admin-store-block" style="margin-bottom:14px;">' +
+      '<h3>編輯店家資訊</h3>' +
+      '<div class="muted" style="margin-bottom:6px;">可整批貼上要更新的欄位（沒貼到的欄位維持不變），或直接在下方逐欄修改。</div>' +
+      '<textarea id="es-batch-text" rows="6" style="width:100%;" placeholder="'+esc(STORE_INFO_PASTE_PLACEHOLDER)+'"></textarea>' +
+      '<div style="margin:6px 0 4px;"><button type="button" class="btn btn-ghost btn-small" data-action="es-batch-import">批次貼入下方欄位</button></div>' +
+      '<div class="divider"></div>' +
+      '<div class="form-grid">' +
+        '<div class="field"><label>店名 *</label><input data-es-field="name" value="'+esc(f.name)+'" /></div>' +
+        '<div class="field"><label>分類標籤</label><input data-es-field="tag" value="'+esc(f.tag)+'" /></div>' +
+        '<div class="field"><label>卡片配色</label><select data-es-field="color"><option value="amber"'+(f.color==='amber'?' selected':'')+'>暖橘</option><option value="teal"'+(f.color==='teal'?' selected':'')+'>青綠</option></select></div>' +
+        '<div class="field"><label>地址</label><input data-es-field="address" value="'+esc(f.address)+'" /></div>' +
+        '<div class="field full"><label>地址備註（選填）</label><input data-es-field="addressNote" value="'+esc(f.addressNote)+'" /></div>' +
+        '<div class="field full"><label>Google 地圖連結（選填）</label><input data-es-field="mapUrl" value="'+esc(f.mapUrl)+'" /></div>' +
+        '<div class="field full"><label>公休／備註</label><input data-es-field="closedNote" value="'+esc(f.closedNote)+'" /></div>' +
+        '<div class="field full"><label>訂購提醒（選填）</label><textarea data-es-field="orderNote" rows="2">'+esc(f.orderNote)+'</textarea></div>' +
+      '</div>' +
+      '<div class="divider"></div>' +
+      '<div class="muted" style="margin-bottom:6px;">聯絡方式</div>' +
+      '<div class="row-list">'+contactsHtml+'</div>' +
+      '<button type="button" class="btn btn-ghost btn-small" data-action="es-add-contact">＋ 新增聯絡方式</button>' +
+      '<div class="divider"></div>' +
+      '<div class="muted" style="margin-bottom:6px;">營業時間</div>' +
+      '<div class="row-list">'+hoursHtml+'</div>' +
+      '<button type="button" class="btn btn-ghost btn-small" data-action="es-add-hours">＋ 新增時段</button>' +
+      '<div class="divider"></div>' +
+      '<div style="display:flex; gap:10px; justify-content:flex-end;">' +
+        '<button type="button" class="btn btn-ghost" data-action="es-cancel">取消</button>' +
+        '<button type="button" class="btn btn-primary" data-action="es-submit">儲存店家資訊</button>' +
+      '</div>' +
+    '</div>';
+  }
+
   function renderExistingStoreAdmin(store){
     var itemsHtml = store.menu.map(function(m,i){
       if(editingItem && editingItem.storeId===store.id && editingItem.index===i){
@@ -920,10 +1062,25 @@
       ? '<span class="confirm-inline">確定刪除整間店家？<button type="button" class="btn btn-danger btn-small" data-action="confirm-delete-store" data-store="'+store.id+'">刪除</button><button type="button" class="btn btn-ghost btn-small" data-action="cancel-confirm">取消</button></span>'
       : '<button type="button" class="btn btn-ghost btn-small" data-action="ask-delete-store" data-store="'+store.id+'">刪除此店家</button>';
 
+    var infoBlock;
+    if(editingStoreInfo && editingStoreInfo.id === store.id){
+      infoBlock = renderEditStoreInfoForm();
+    } else {
+      var contactsSummary = store.contacts.map(function(c){ return (c.label?c.label+'：':'')+c.value; }).join('　') || '（尚未填寫聯絡方式）';
+      infoBlock = '' +
+        '<div class="muted" style="margin-bottom:10px;">' +
+          '📍 '+esc(store.address||'（尚未填寫地址）')+(store.addressNote?'　（'+esc(store.addressNote)+'）':'')+'<br>' +
+          '☎️ '+esc(contactsSummary) +
+        '</div>' +
+        '<button type="button" class="btn btn-ghost btn-small" data-action="edit-store-info-open" data-store="'+store.id+'">✏️ 編輯店家資訊（地址／電話／營業時間等）</button>' +
+        '<div class="divider"></div>';
+    }
+
     return '' +
     '<details class="admin-store-block" open>' +
       '<summary>'+esc(store.name)+'（'+store.menu.length+' 個品項）</summary>' +
       '<div style="margin-top:10px;">' +
+        infoBlock +
         '<div class="muted" style="margin-bottom:6px;">既有品項（可編輯名稱／價格，或移除）</div>' +
         '<div class="row-list">'+itemsHtml+'</div>' +
         '<div class="row-list-item" style="margin-top:8px;">' +
@@ -1060,7 +1217,7 @@
       if(action==='admin-cancel'){ isAdmin = false; render(); return; }
       if(action==='goto-admin'){ adminScreen = true; render(); return; }
       if(action==='goto-orders'){ adminScreen = false; render(); return; }
-      if(action==='admin-logout'){ isAdmin = false; adminScreen = false; newStoreForm=null; confirmTarget=null; editingItem=null; render(); return; }
+      if(action==='admin-logout'){ isAdmin = false; adminScreen = false; newStoreForm=null; confirmTarget=null; editingItem=null; editingStoreInfo=null; render(); return; }
       if(action==='admin-login-submit'){
         var pcEl = document.getElementById('admin-passcode-input');
         if(pcEl && pcEl.value === config.passcode){ isAdmin = true; adminScreen = true; showToast('已進入管理頁面。'); }
@@ -1136,28 +1293,71 @@
         render();
         return;
       }
+      if(action==='ns-info-batch-import'){
+        var nsInfoEl = document.getElementById('ns-info-batch');
+        var nsInfoParsed = parseStoreInfoText(nsInfoEl ? nsInfoEl.value : '');
+        applyParsedInfoToForm(newStoreForm, nsInfoParsed);
+        showToast('已套用批次貼上的內容，請檢查下方欄位是否正確。');
+        render();
+        return;
+      }
+
+      if(action==='edit-store-info-open'){ editingStoreInfo = { id: store, form: storeInfoFormFromStore(findStore(store)) }; render(); return; }
+      if(action==='es-cancel'){ editingStoreInfo = null; render(); return; }
+      if(action==='es-submit'){ saveStoreInfoEdit(); return; }
+      if(action==='es-add-contact'){ editingStoreInfo.form.contacts.push({type:'phone',label:'',value:''}); render(); return; }
+      if(action==='es-remove-contact'){ editingStoreInfo.form.contacts.splice(Number(idx),1); render(); return; }
+      if(action==='es-add-hours'){ editingStoreInfo.form.hours.push({days:'',time:''}); render(); return; }
+      if(action==='es-remove-hours'){ editingStoreInfo.form.hours.splice(Number(idx),1); render(); return; }
+      if(action==='es-batch-import'){
+        var esInfoEl = document.getElementById('es-batch-text');
+        var esInfoParsed = parseStoreInfoText(esInfoEl ? esInfoEl.value : '');
+        applyParsedInfoToForm(editingStoreInfo.form, esInfoParsed);
+        showToast('已套用批次貼上的內容，請檢查下方欄位是否正確。');
+        render();
+        return;
+      }
     };
 
     app.oninput = function(e){
       var el = e.target;
       var nsField = el.getAttribute('data-ns-field');
-      if(!nsField || !newStoreForm) return;
+      var esField = el.getAttribute('data-es-field');
       var idx = el.getAttribute('data-idx');
-      if(nsField==='contact-type') newStoreForm.contacts[idx].type = el.value;
-      else if(nsField==='contact-label') newStoreForm.contacts[idx].label = el.value;
-      else if(nsField==='contact-value') newStoreForm.contacts[idx].value = el.value;
-      else if(nsField==='hours-days') newStoreForm.hours[idx].days = el.value;
-      else if(nsField==='hours-time') newStoreForm.hours[idx].time = el.value;
-      else if(nsField==='menu-name') newStoreForm.menu[idx].name = el.value;
-      else if(nsField==='menu-price') newStoreForm.menu[idx].price = el.value;
-      else if(nsField==='name') newStoreForm.name = el.value;
-      else if(nsField==='tag') newStoreForm.tag = el.value;
-      else if(nsField==='color') newStoreForm.color = el.value;
-      else if(nsField==='address') newStoreForm.address = el.value;
-      else if(nsField==='addressNote') newStoreForm.addressNote = el.value;
-      else if(nsField==='mapUrl') newStoreForm.mapUrl = el.value;
-      else if(nsField==='closedNote') newStoreForm.closedNote = el.value;
-      else if(nsField==='orderNote') newStoreForm.orderNote = el.value;
+      if(nsField && newStoreForm){
+        if(nsField==='contact-type') newStoreForm.contacts[idx].type = el.value;
+        else if(nsField==='contact-label') newStoreForm.contacts[idx].label = el.value;
+        else if(nsField==='contact-value') newStoreForm.contacts[idx].value = el.value;
+        else if(nsField==='hours-days') newStoreForm.hours[idx].days = el.value;
+        else if(nsField==='hours-time') newStoreForm.hours[idx].time = el.value;
+        else if(nsField==='menu-name') newStoreForm.menu[idx].name = el.value;
+        else if(nsField==='menu-price') newStoreForm.menu[idx].price = el.value;
+        else if(nsField==='name') newStoreForm.name = el.value;
+        else if(nsField==='tag') newStoreForm.tag = el.value;
+        else if(nsField==='color') newStoreForm.color = el.value;
+        else if(nsField==='address') newStoreForm.address = el.value;
+        else if(nsField==='addressNote') newStoreForm.addressNote = el.value;
+        else if(nsField==='mapUrl') newStoreForm.mapUrl = el.value;
+        else if(nsField==='closedNote') newStoreForm.closedNote = el.value;
+        else if(nsField==='orderNote') newStoreForm.orderNote = el.value;
+        return;
+      }
+      if(esField && editingStoreInfo){
+        var f = editingStoreInfo.form;
+        if(esField==='contact-type') f.contacts[idx].type = el.value;
+        else if(esField==='contact-label') f.contacts[idx].label = el.value;
+        else if(esField==='contact-value') f.contacts[idx].value = el.value;
+        else if(esField==='hours-days') f.hours[idx].days = el.value;
+        else if(esField==='hours-time') f.hours[idx].time = el.value;
+        else if(esField==='name') f.name = el.value;
+        else if(esField==='tag') f.tag = el.value;
+        else if(esField==='color') f.color = el.value;
+        else if(esField==='address') f.address = el.value;
+        else if(esField==='addressNote') f.addressNote = el.value;
+        else if(esField==='mapUrl') f.mapUrl = el.value;
+        else if(esField==='closedNote') f.closedNote = el.value;
+        else if(esField==='orderNote') f.orderNote = el.value;
+      }
     };
   }
 
