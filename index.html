@@ -788,19 +788,15 @@
   }
 
   function renderStores(){
-    var stores = config.stores.slice();
     var todayStore = config.todayPick ? findStore(config.todayPick) : null;
-    if(todayStore){
-      stores.sort(function(a,b){
-        if(a.id===config.todayPick) return -1;
-        if(b.id===config.todayPick) return 1;
-        return 0;
-      });
-    }
+    // 設定了本日嚴選時，訂購頁面只顯示那一家店，避免大家誤選到今天沒開放的店家
+    var stores = todayStore ? [todayStore] : config.stores;
     return '' +
     '<div class="section">' +
       '<div class="section-head"><div class="section-title">店家資訊與菜單</div><div class="section-hint">點選 ＋／− 選擇份數</div></div>' +
-      (todayStore ? '<div class="today-pick-banner">🌟 本日嚴選：'+esc(todayStore.name)+'　—　今天想吃這家的話，直接在下方點選份數即可！</div>' : '') +
+      (todayStore
+        ? '<div class="today-pick-banner">🌟 本日嚴選：'+esc(todayStore.name)+'　—　今天開放訂購這一家，直接在下方點選份數即可！</div>'
+        : '<div class="muted" style="margin-bottom:12px;">尚未設定本日嚴選，暫時顯示所有店家；建議到管理頁面設定今天要開放訂購的店家。</div>') +
       '<div class="store-grid">' + stores.map(function(s){ return renderStoreCard(s, s.id===config.todayPick); }).join('') + '</div>' +
     '</div>';
   }
